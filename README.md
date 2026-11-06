@@ -116,6 +116,7 @@ Once the plugin is listed in the catalog: `hermes plugins install hermes-rescue 
   - a `config.yaml` edit sent to approval with a snapshot;
   - the guard lifted, `memories/` deleted for real, then restored with `/rescue undo`;
   - ordinary build cleanup in a project folder left alone.
+- Run on a Windows laptop in Hermes Desktop v0.23.0 (installed from this repo), with a real model: a memories delete blocked with a toast, the agent's `SOUL.md` edit sent to the approval box with a snapshot, then put back with **Undo** in the Rescue pane; the status-bar chip turns red after a block. Screenshots are in `docs/screenshots/`.
 
 ## Development
 
