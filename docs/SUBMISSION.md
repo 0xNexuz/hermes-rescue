@@ -5,19 +5,18 @@ checks only run once a maintainer starts them, so open the PR early (target: Mon
 
 ## 1. Repository
 
-- [ ] Public repo `0xNexuz/hermes-rescue`, commits authored by 0xNexuz only.
-- [ ] `pytest` passes and `hermes plugins validate hermes_rescue --install-deps` passes on the pushed commit.
-- [ ] Desktop half checked on a real machine: status-bar chip, pane, Undo, toast. Screenshots saved to
-      `docs/screenshots/` and committed.
-- [ ] Code frozen before the PR (every SHA change is re-reviewed).
+- [x] Public repo `0xNexuz/hermes-rescue`, commits authored by 0xNexuz only.
+- [x] `pytest` passes and `hermes plugins validate hermes_rescue --install-deps` passes on the pushed commit.
+- [x] Desktop half checked on a real machine (Windows, Hermes Desktop v0.23.0): status-bar chip, pane, Undo, toast. Screenshots in `docs/screenshots/`.
+- [x] Code frozen before the PR (every SHA change is re-reviewed): pin `cba030b`.
 
 ## 2. Catalog PR to `NousResearch/hermes-agent`
 
-- [ ] Fork, branch, add `plugin-catalog/hermes-rescue.yaml` from `docs/catalog-entry.yaml`.
-- [ ] Replace both `<SHA>` placeholders with the full 40-character SHA (`git rev-parse HEAD`).
-- [ ] Add `screenshots:` URLs (raw.githubusercontent.com, pinned to the same SHA).
-- [ ] `python3 scripts/validate_plugin_catalog.py plugin-catalog/hermes-rescue.yaml` → OK.
-- [ ] PR title: `plugin-catalog: add hermes-rescue (Plugin Hackathon entry)`.
+- [x] Fork, branch, add `plugin-catalog/hermes-rescue.yaml` from `docs/catalog-entry.yaml`.
+- [x] Replace both `<SHA>` placeholders with the full 40-character SHA (`git rev-parse HEAD`).
+- [x] Add `screenshots:` URLs (raw.githubusercontent.com, pinned to the same SHA).
+- [x] `python3 scripts/validate_plugin_catalog.py plugin-catalog/hermes-rescue.yaml` → OK.
+- [x] PR opened: https://github.com/NousResearch/hermes-agent/pull/150015
 - [ ] PR body: the text below, plus screenshots.
 
 ### PR body (draft)

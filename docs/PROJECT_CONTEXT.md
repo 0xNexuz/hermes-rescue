@@ -16,7 +16,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 - **Branch:** main, pushed to `origin` (github.com/0xNexuz/hermes-rescue, public)
 - **HEAD:** d0f7653638ac93ac736b4d858b5cc15745a6919a (author/committer 0xNexuz <elikrypttt@gmail.com>, no AI attribution)
 - **Working tree:** this file updated after the push (goes in with the screenshots commit)
-- **Relevant remote or PR:** catalog entry pinned to `cba030b037a758a95520bd58b92f2e814b94af7a` on branch `add-hermes-rescue` of the fork 0xNexuz/hermes-agent (commit 04db5d36, validated with the whole catalog); PR to NousResearch/hermes-agent opened by the owner from a pre-filled link (this session can't attach the upstream repo)
+- **Relevant remote or PR:** catalog PR https://github.com/NousResearch/hermes-agent/pull/150015 (open, 1 commit 04db5d3 from fork branch `add-hermes-rescue`, pins `cba030b037a758a95520bd58b92f2e814b94af7a`; no checks or reviews yet as of 2026-11-06)
 - **Last verified milestone:** pushed commit installs from GitHub (`hermes plugins install 0xNexuz/hermes-rescue/hermes_rescue --enable`) and its catalog entry validates (2026-11-06)
 
 ## Hackathon Context
@@ -52,11 +52,11 @@ Keep this file concise and evidence-based. Update current state in place, append
 - **Completed features:** guard; snapshots + undo; real-cause notes (transform + post paths); `/rescue` (status, log, snapshots, undo, allow, lock); Desktop backend routes; Desktop UI code; README, catalog entry, demo kit, submission docs
 - **Implemented but unverified:** nothing known; Desktop half verified on the owner's Windows laptop (chip, pane, toast, undo, backend)
 - **Pending features:** screenshots; optional Telegram demo recording
-- **P0 priorities:** owner clicks Create pull request (branch ready); later commits here don't move the catalog pin
-- **P1 priorities:** record demo; X post; form
+- **P0 priorities:** demo video (under 90 s) and X post tagging @NousResearch; then the official form with the PR and X links before 5 PM EST Nov 11 (11 PM WAT)
+- **P1 priorities:** answer review comments on #150015 (a new pin means a new SHA and re-review)
 - **P2 priorities:** issue to Nous about the skipped hooks on exhausted turns
 - **P3 priorities:** Scout (plugin recommender) as a follow-up
-- **Current milestone:** submission preparation
+- **Current milestone:** catalog PR opened; demo + X post + form remain
 - **Known blockers:** Desktop screenshots require the owner's machine; attaching the fork for a PR branch was refused by this session's permission check (owner can open the PR from the browser)
 
 ## Verification
