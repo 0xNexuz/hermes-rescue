@@ -246,7 +246,7 @@ function Pane() {
             : jsx('div', {
                 className: 'text-xs',
                 style: { color: 'var(--ui-text-tertiary)' },
-                children: 'None yet. One is saved before every risky change Rescue lets through.'
+                children: 'Nothing to undo. A snapshot is saved before every risky change Rescue lets through.'
               })
         }),
         jsx(Section, {
