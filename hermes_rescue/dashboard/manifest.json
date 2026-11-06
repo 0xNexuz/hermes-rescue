@@ -1,0 +1,7 @@
+{
+  "name": "hermes-rescue",
+  "label": "Rescue",
+  "description": "Backend for the Rescue Desktop pane: health, events, snapshots, undo and the guard switch.",
+  "version": "0.1.0",
+  "api": "plugin_api.py"
+}

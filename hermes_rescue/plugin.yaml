@@ -1,0 +1,14 @@
+name: hermes-rescue
+version: "0.1.0"
+description: "Keeps your agent from breaking Hermes, and says what really went wrong. Blocks the agent from deleting or hand-editing Hermes's own data (sessions, memories, skills, settings, keys) and points it to the supported command; asks you first, with a snapshot and /rescue undo, before edits to settings or SOUL.md; and when a reply fails or quietly comes from a backup, adds one plain line per attempt with the real cause and the fix. Local only."
+author: 0xNexuz
+requires_hermes: ">=0.22.7"
+provides_tools: []
+provides_hooks:
+  - pre_tool_call
+  - post_tool_call
+  - api_request_error
+  - post_api_request
+  - transform_llm_output
+  - on_session_end
+provides_middleware: []
