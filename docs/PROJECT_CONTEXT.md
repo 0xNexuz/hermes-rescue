@@ -5,7 +5,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 ## Project Identity
 
 - **Project name:** Hermes Rescue (`hermes-rescue`)
-- **Repository:** `0xNexuz/hermes-rescue` (to be created; owner: Eleazar / 0xNexuz, FUTUREUNI)
+- **Repository:** `0xNexuz/hermes-rescue` (public; owner: Eleazar / 0xNexuz, FUTUREUNI)
 - **Project description:** Hermes Agent plugin that stops the agent from wrecking Hermes's own data and explains the real cause of failed replies, with `/rescue` and a Desktop pane.
 - **Current workflow stage:** VERIFICATION → SUBMISSION_PREPARATION
 - **Overall status:** IMPLEMENTED; core VERIFIED in real Hermes after two independent reviews; Desktop live view UNVERIFIED
@@ -13,11 +13,11 @@ Keep this file concise and evidence-based. Update current state in place, append
 
 ## Git State
 
-- **Branch:** main (local only)
-- **HEAD:** no commits yet — awaiting the owner's git identity
-- **Working tree:** all files uncommitted
-- **Relevant remote or PR:** none yet
-- **Last verified milestone:** review fixes verified in real Hermes (2026-11-06)
+- **Branch:** main, pushed to `origin` (github.com/0xNexuz/hermes-rescue, public)
+- **HEAD:** d0f7653638ac93ac736b4d858b5cc15745a6919a (author/committer 0xNexuz <elikrypttt@gmail.com>, no AI attribution)
+- **Working tree:** this file updated after the push (goes in with the screenshots commit)
+- **Relevant remote or PR:** fork github.com/0xNexuz/hermes-agent exists; catalog PR not opened yet
+- **Last verified milestone:** pushed commit installs from GitHub (`hermes plugins install 0xNexuz/hermes-rescue/hermes_rescue --enable`) and its catalog entry validates (2026-11-06)
 
 ## Hackathon Context
 
@@ -57,7 +57,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 - **P2 priorities:** issue to Nous about the skipped hooks on exhausted turns
 - **P3 priorities:** Scout (plugin recommender) as a follow-up
 - **Current milestone:** submission preparation
-- **Known blockers:** owner's git identity and GitHub push; Desktop screenshots require the owner's machine
+- **Known blockers:** Desktop screenshots require the owner's machine; attaching the fork for a PR branch was refused by this session's permission check (owner can open the PR from the browser)
 
 ## Verification
 
