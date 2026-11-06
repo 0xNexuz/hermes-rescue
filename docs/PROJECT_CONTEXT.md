@@ -16,7 +16,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 - **Branch:** main, pushed to `origin` (github.com/0xNexuz/hermes-rescue, public)
 - **HEAD:** d0f7653638ac93ac736b4d858b5cc15745a6919a (author/committer 0xNexuz <elikrypttt@gmail.com>, no AI attribution)
 - **Working tree:** this file updated after the push (goes in with the screenshots commit)
-- **Relevant remote or PR:** fork github.com/0xNexuz/hermes-agent exists; catalog PR not opened yet
+- **Relevant remote or PR:** catalog entry pinned to `cba030b037a758a95520bd58b92f2e814b94af7a` on branch `add-hermes-rescue` of the fork 0xNexuz/hermes-agent (commit 04db5d36, validated with the whole catalog); PR to NousResearch/hermes-agent opened by the owner from a pre-filled link (this session can't attach the upstream repo)
 - **Last verified milestone:** pushed commit installs from GitHub (`hermes plugins install 0xNexuz/hermes-rescue/hermes_rescue --enable`) and its catalog entry validates (2026-11-06)
 
 ## Hackathon Context
@@ -52,7 +52,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 - **Completed features:** guard; snapshots + undo; real-cause notes (transform + post paths); `/rescue` (status, log, snapshots, undo, allow, lock); Desktop backend routes; Desktop UI code; README, catalog entry, demo kit, submission docs
 - **Implemented but unverified:** nothing known; Desktop half verified on the owner's Windows laptop (chip, pane, toast, undo, backend)
 - **Pending features:** screenshots; optional Telegram demo recording
-- **P0 priorities:** owner verifies Desktop on his machine; push repo; open catalog PR by Nov 9
+- **P0 priorities:** owner clicks Create pull request (branch ready); later commits here don't move the catalog pin
 - **P1 priorities:** record demo; X post; form
 - **P2 priorities:** issue to Nous about the skipped hooks on exhausted turns
 - **P3 priorities:** Scout (plugin recommender) as a follow-up
