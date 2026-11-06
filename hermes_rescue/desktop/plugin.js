@@ -180,8 +180,8 @@ function post(path, body) {
 
 function afterAction(result) {
   refresh()
-  if (result && result.message) {
-    host.notify({ kind: result.ok === false ? 'warning' : 'info', title: 'Rescue', message: result.message })
+  if (result && (result.summary || result.message)) {
+    host.notify({ kind: result.ok === false ? 'warning' : 'info', title: 'Rescue', message: result.summary || result.message })
   }
 }
 

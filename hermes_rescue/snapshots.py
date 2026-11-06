@@ -412,9 +412,10 @@ def _restore_dir(stored: Optional[Path], orig: Path, aside: Path, home: Path, po
 
 
 def restore(records: list[dict], home: Path, folder: Path, policy: Optional[Policy] = None,
-            snap_root: Optional[Path] = None) -> tuple[list[str], list[str]]:
+            snap_root: Optional[Path] = None, unchanged: Optional[list[str]] = None) -> tuple[list[str], list[str]]:
     """Put snapshot *records* back. Current versions go to ``<folder>/_replaced-<time>/``.
-    Returns (restored descriptions, problems)."""
+    Returns (restored descriptions, problems); names still exactly as saved go to *unchanged*."""
+    unchanged = unchanged if unchanged is not None else []
     policy = policy or Policy([home], [folder.parent.parent] if snap_root is None else [snap_root.parent])
     folder = Path(os.path.normpath(str(folder)))
     if snap_root is not None and folder.parent != Path(os.path.normpath(str(snap_root))):
@@ -454,17 +455,25 @@ def restore(records: list[dict], home: Path, folder: Path, policy: Optional[Poli
                     problems.append(f"{orig.name}: couldn't merge ({exc}). The full copy from before is kept at "
                                     f"{stored}; to roll back everything, stop Hermes and copy it over {orig.name}.")
                     continue
-                done.append(_merge_message(orig.name, added))
+                if not (added.get("sessions") or added.get("messages") or added.get("not_back")):
+                    unchanged.append(orig.name)
+                else:
+                    done.append(_merge_message(orig.name, added))
                 continue
             if rec.get("kind") == "dir":
                 notes = []
                 back, moved = _restore_dir(stored, orig, aside, home, policy, notes)
+                if not (back or moved or notes):
+                    unchanged.append(f"{orig.name}/")
+                    continue
                 extra = f", {moved} newer file{'s' if moved != 1 else ''} set aside" if moved else ""
                 done.append(f"restored {orig.name}/ ({back} file{'s' if back != 1 else ''} put back{extra})")
                 done += notes
             else:
-                changed = _restore_file(stored, orig, aside, home)
-                done.append(f"restored {orig.name}" if changed else f"{orig.name} was already as saved")
+                if _restore_file(stored, orig, aside, home):
+                    done.append(f"restored {orig.name}")
+                else:
+                    unchanged.append(orig.name)
         except (OSError, shutil.Error, sqlite3.Error) as exc:
             problems.append(f"{orig.name}: {exc}")
     return done, problems

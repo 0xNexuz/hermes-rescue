@@ -168,26 +168,38 @@ class RescueCommand:
             snap = store.snapshot(int(picked))
         return self.put_back(snap)[1]
 
-    def put_back(self, snap: dict) -> tuple[bool, str]:
-        """Restore one snapshot. Returns (anything put back, message for the user)."""
+    def put_back(self, snap: dict) -> tuple[bool, str, str]:
+        """Restore one snapshot. Returns (anything put back, full message, one-line summary)."""
+        name = f"snapshot #{snap['id']} ({snap['label']})"
         if snap["status"] == "restored":
-            return False, f"Snapshot #{snap['id']} was already put back. Its newer files were saved alongside it."
+            msg = f"Snapshot #{snap['id']} was already put back. Its newer files were saved alongside it."
+            return False, msg, msg
         store = self.rescue.store()
+        unchanged: list[str] = []
         done, problems = snapshots.restore(snap["files"], self.rescue.home(), Path(snap["folder"]),
-                                           self.rescue.policy(), self.rescue.snap_root())
+                                           self.rescue.policy(), self.rescue.snap_root(), unchanged)
+        if not done and not problems:
+            # The change hasn't happened (yet): keep the snapshot usable for when it does.
+            what = ", ".join(unchanged) or "nothing"
+            msg = (f"🛟 Nothing to undo yet: {what} is still exactly as in {name}. If the change is waiting "
+                   f"for your approval, approve it first; Undo will put it back afterwards.")
+            return False, msg, f"Nothing to undo yet: {what} hasn't changed since snapshot #{snap['id']}."
         if done:
             store.set_snapshot_status(snap["id"], "restored")
-        store.add_incident("undo", f"Put back snapshot #{snap['id']} ({snap['label']})" if done
-                           else f"Could not put back snapshot #{snap['id']} ({snap['label']})",
+        store.add_incident("undo", f"Put back {name}" if done else f"Could not put back {name}",
                            data={"done": done, "problems": problems})
-        lines = [f"🛟 Rescue put back snapshot #{snap['id']} ({snap['label']})." if done
-                 else f"🛟 Rescue couldn't put back snapshot #{snap['id']} ({snap['label']})."]
+        lines = [f"🛟 Rescue put back {name}." if done else f"🛟 Rescue couldn't put back {name}."]
         lines += [f"• {d}" for d in done]
         lines += [f"⚠ {p}" for p in problems]
         if done:
             lines.append("The versions it replaced are kept inside the snapshot folder. Keys and sign-ins are "
                          "never part of a snapshot. Start a new session (/new) so Hermes reloads the files.")
-        return bool(done), "\n".join(lines)
+            summary = f"Put back {name}. Start a new session so Hermes reloads it."
+        else:
+            summary = f"Couldn't put back snapshot #{snap['id']}: {problems[0]}"
+        if done and problems:
+            summary += f" ({len(problems)} item{'s' if len(problems) != 1 else ''} couldn't be restored — see /rescue log.)"
+        return bool(done), "\n".join(lines), summary
 
     # ---- guard switch -------------------------------------------------------------------------
     def allow(self, rest: list[str]) -> str:

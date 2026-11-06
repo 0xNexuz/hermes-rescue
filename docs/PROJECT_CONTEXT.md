@@ -50,7 +50,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 
 - **Approved implementation scope:** full Rescue plugin as above (approved 2026-11-05: "lets go for rescue, lets begin")
 - **Completed features:** guard; snapshots + undo; real-cause notes (transform + post paths); `/rescue` (status, log, snapshots, undo, allow, lock); Desktop backend routes; Desktop UI code; README, catalog entry, demo kit, submission docs
-- **Implemented but unverified:** Desktop UI inside the real Hermes Desktop app; plugin backend mount via the real dashboard/Desktop server
+- **Implemented but unverified:** the status-bar chip in Hermes Desktop (pane, toast and backend mount verified on the owner's Windows laptop)
 - **Pending features:** screenshots; optional Telegram demo recording
 - **P0 priorities:** owner verifies Desktop on his machine; push repo; open catalog PR by Nov 9
 - **P1 priorities:** record demo; X post; form
@@ -82,6 +82,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 | 2026-11-06 | `pytest` (195 tests) after second-review fixes | Python 3.14.9, 3.13.18, 3.11.18 | VERIFIED | 195 passed on each |
 | 2026-11-06 | Both reviewers' probe scripts after fixes | Py 3.14 | VERIFIED | 312/312 everyday runs allowed (review 2), 102/103 (review 1, the 1 intended); 0 fuzz crashes; 2 MB one-liner well under the 30 s hook timeout; remaining allows are documented limits or out of scope (reading keys; git in the checkout, which core refuses) |
 | 2026-11-06 | `hermes plugins validate hermes_rescue --install-deps` after fixes | Hermes main @ 355a417 | VERIFIED | passed; security scan safe |
+| 2026-11-06 | Owner's Windows laptop, Hermes Desktop (local install), Rescue installed from GitHub with `hermes plugins install … --enable`, both halves on | Windows, real model | VERIFIED | `rm -rf "$LOCALAPPDATA/hermes/memories"` blocked with toast, pane "1 stopped", reply footer; `echo … >> config.yaml` went to Desktop's approval box, pane "asked you first" + snapshot #1 with Undo. Found: Undo clicked before approving marked the snapshot used ("already as saved") → fixed; Desktop's approval box shows the command, not Rescue's reason → docs corrected; status-bar chip not seen yet |
 | 2026-11-06 | Windows path rules (Git Bash `/c/…`, `C:\` paths, `%LOCALAPPDATA%`, `$env:`, PowerShell/cmd deletes) | Linux, `use_windows_paths(True)` + PureWindowsPath | SIMULATED | 22 tests pass; first real Windows run is the owner's (native Windows home = `%LOCALAPPDATA%\hermes`) |
 | 2026-11-06 | `demo/run_demo.sh` + live `state.db` check rerun after second-review fixes | Hermes main, Py 3.14 | VERIFIED | same results: blocks under `--yolo`, real cause note, undo of memories and of deleted messages (10 back, gateway kept working), project build cleanup ran |
 
@@ -90,7 +91,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 - **Real integrations:** Hermes hooks, slash command, approvals gate, `post_message`, plugin storage — all VERIFIED in real runs
 - **Simulated functionality:** Desktop UI rendering (stubbed SDK)
 - **Verified evidence links:** none public yet
-- **Unverified claims:** Desktop UI and backend mount in the real Desktop app
+- **Unverified claims:** the Desktop status-bar chip
 
 ## Decision Log
 

@@ -521,3 +521,15 @@ def test_a_symlinked_protected_folder_is_snapshot_through_the_link(rescue, home,
     (dot / "SKILL.md").write_text("clobbered")
     assert "restored skills/" in commands.RescueCommand(rescue)("undo 1")
     assert (dot / "SKILL.md").read_text() == "original" and (home / "skills").is_symlink()
+
+
+def test_undo_before_the_change_happens_keeps_the_snapshot(rescue, home):
+    original = (home / "config.yaml").read_text()
+    out = call_tool(rescue, "terminal", {"command": f"echo '# t' >> {home}/config.yaml"}, call="c9")
+    assert out["action"] == "approve"            # the snapshot is saved while the approval waits
+    cmd = commands.RescueCommand(rescue)
+    assert "Nothing to undo yet" in cmd("undo 1")
+    rescue.on_post_tool_call(tool_call_id="c9", status="ok")
+    (home / "config.yaml").write_text(original + "# t\n")   # the human approved; it ran
+    assert "put back snapshot #1" in cmd("undo 1")
+    assert (home / "config.yaml").read_text() == original

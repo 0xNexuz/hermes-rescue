@@ -85,8 +85,8 @@ def undo(body: dict) -> dict[str, Any]:
     snap = command.rescue.store().snapshot(snap_id)
     if snap is None:
         return {"ok": False, "message": f"No snapshot #{snap_id}."}
-    ok, message = command.put_back(snap)
-    return {"ok": ok, "message": message}
+    ok, message, summary = command.put_back(snap)
+    return {"ok": ok, "message": message, "summary": summary}
 
 
 @router.post("/guard")

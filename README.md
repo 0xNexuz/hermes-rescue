@@ -11,7 +11,7 @@ Rescue fixes both, on every surface Hermes runs on: the CLI, the TUI, Hermes Des
 
 ## What it does
 
-**Guard.** Before any tool call runs, Rescue checks whether it would delete or rewrite Hermes's own data. Deleting is refused and the agent is pointed to the supported command. Editing something a person may want edited (settings, `SOUL.md`, a memory file) goes to Hermes's normal approval prompt, with Rescue's reason, and a snapshot is saved first. Refusals hold even in YOLO mode, because Rescue runs before approvals. (In YOLO mode, or with approvals off, Hermes approves the "asks you" edits on its own; the snapshot is still saved, so `/rescue undo` still works.)
+**Guard.** Before any tool call runs, Rescue checks whether it would delete or rewrite Hermes's own data. Deleting is refused and the agent is pointed to the supported command. Editing something a person may want edited (settings, `SOUL.md`, a memory file) goes to Hermes's normal approval prompt and a snapshot is saved first. In the terminal the prompt carries Rescue's reason; in Hermes Desktop the prompt shows the command and the Rescue pane says why ("asked you first"). Clicking Undo before you approve changes nothing and keeps the snapshot for afterwards. Refusals hold even in YOLO mode, because Rescue runs before approvals. (In YOLO mode, or with approvals off, Hermes approves the "asks you" edits on its own; the snapshot is still saved, so `/rescue undo` still works.)
 
 ```text
 I tried to tidy up Hermes for you.
@@ -83,7 +83,7 @@ Once the plugin is listed in the catalog: `hermes plugins install hermes-rescue 
 
 | Part | Hermes surface |
 | --- | --- |
-| Guard | `pre_tool_call` returns `block` (with the supported alternative) or `approve` (Hermes's own human approval gate, with Rescue's reason). Rescue never auto-approves anything. |
+| Guard | `pre_tool_call` returns `block` (with the supported alternative) or `approve` (Hermes's own human approval gate; Rescue's reason is passed along). Rescue never auto-approves anything. |
 | Snapshots and undo | Copied before the change into `plugin-data/hermes-rescue/snapshots/`; SQLite databases through SQLite's backup API, so the copy is consistent while Hermes has them open. Undo of `state.db` adds back the conversations and messages that went missing and leaves every other row alone, because Hermes is using that database at that moment (the full copy stays in the snapshot). Files are put back with the current version kept inside the snapshot, so an undo can itself be undone; folders are merged (files added since are set aside, not deleted). Undo only writes inside the Hermes folders. |
 | Real cause | `api_request_error` and `post_api_request` follow each attempt in a turn. A local rule book (no model, no network) classifies each failure. The note is added with `transform_llm_output` when the turn ends normally, or posted with `ctx.post_message` when Hermes ends a failed turn early. If a later attempt succeeds, the note is edited to say so. |
 | Desktop | `desktop/plugin.js` (status bar, pane, toasts) reads `dashboard/plugin_api.py`; the agent half pushes `plugin.hermes-rescue.changed` events so the pane updates live. |
