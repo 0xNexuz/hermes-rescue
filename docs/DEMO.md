@@ -19,7 +19,7 @@ with the break-and-fix moment; no intro slides.
 | --- | --- | --- |
 | 0–8 s | Chat: "Hermes feels slow, clean it up." The agent starts a delete on `~/.hermes/memories`. | "Ask an agent to fix Hermes and it can wreck it. One user lost 237 sessions this way." |
 | 8–22 s | The reply ends with the Rescue note; toast in the corner; memories folder still there. | "Rescue blocks it, even in YOLO mode, and tells the agent the safe command instead." |
-| 22–40 s | Ask it to edit settings. Hermes asks for approval; the Rescue pane shows "asked you first" and a new snapshot. Click **Run**, then **Undo** in the pane. | "Edits you might want go to your approval, with a snapshot first. One click puts it back." |
+| 22–40 s | Ask it to append a line to SOUL.md (the agent itself refuses hand-edits of config.yaml, following Hermes's guidance). Hermes asks for approval; the Rescue pane shows "asked you first" and a new snapshot. Click **Run**, then **Undo** in the pane. | "Edits you might want go to your approval, with a snapshot first. One click puts it back." |
 | 40–60 s | Switch to a model the local server hasn't loaded. Hermes says "temporarily unavailable, wait and retry". Rescue's note appears: model not loaded → `ollama pull …`. | "When a reply fails, Hermes guesses. Rescue tells you the real cause and the fix." |
 | 60–75 s | `/rescue` in Telegram (or the CLI): health, last problem, buttons. | "Same answers in every app: CLI, Desktop, Telegram, WhatsApp." |
 | 75–88 s | Terminal: `pytest` green, `hermes plugins validate` passing, "no network calls". | "190+ tests, passes Hermes's own validator. Local only: no network, no model calls, never reads your keys." |
