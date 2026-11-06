@@ -54,7 +54,7 @@ Fix: Load it on that server (`ollama pull missing-model`), or pick a model it ha
 | The whole Hermes home | always refused | — | `hermes doctor`, `hermes debug share` |
 | Hermes's own program files (a source checkout, or `hermes-agent/` in the home) | refused | asks you | `hermes update`, `hermes doctor` |
 
-Inside a profile (`profiles/<name>/`) the same rows apply to that profile's own files. While a profile is active, the default home is guarded too.
+Inside a profile (`profiles/<name>/`) the same rows apply to that profile's own files. While a profile is active, the default home is guarded too. On native Windows the Hermes home is `%LOCALAPPDATA%\hermes` instead of `~/.hermes`; Rescue guards it the same way, whether the agent writes Git Bash paths (`/c/Users/…`), Windows paths (`C:\Users\…`, `$LOCALAPPDATA`), or calls PowerShell or `cmd` to delete, move or write files.
 
 Logs, caches and build leftovers are left alone, as are your own projects and anything outside the Hermes folders. Rescue looks at where a command runs: `find . -name '*.tmp' -delete` in your home folder isn't treated as wiping Hermes, and when Hermes doesn't say which folder the terminal is in, relative paths are left alone rather than guessed. When the terminal is inside a Hermes checkout (you're working on Hermes itself), its program files aren't guarded; for a `pip`/`pipx` install the package manager owns them and Rescue only refuses `pip uninstall hermes-agent`.
 
@@ -100,13 +100,14 @@ Once the plugin is listed in the catalog: `hermes plugins install hermes-rescue 
 ## Limits
 
 - The shell check reads commands the way the shell does: quotes, comments, here-documents, `$(…)`, globs and `{a,b}` braces, `cd`/`env -C`, `bash -c`, `| xargs rm`, `find -name … -delete`, `sqlite3` writes (including SQL piped in or read from a file), `rsync --delete`, `tar -x`, `pip uninstall`. Quoted text, such as a commit message that mentions a command, is not treated as a command. It does not expand aliases, variables other than `$HOME`/`$HERMES_HOME`, or the scripts a command calls.
+- On Windows, PowerShell and `cmd` commands are read for deletes, moves, copies and writes (`Remove-Item`, `rd`, `Move-Item`, `Set-Content` and their short names); longer PowerShell scripts with their own logic are not followed.
 - `/rescue undo` for `state.db` only brings back missing conversations and messages; edits to rows that still exist, and other tables, are not rolled back (the full copy is in the snapshot). A database that appeared after the snapshot is left in place.
 - Python passed to `execute_code` can build paths at run time, so Rescue only asks you (never blocks), and only when a destructive call and a path into the Hermes home appear in the same code.
 - In the classic CLI running without the Hermes gateway, a failed-turn note has nowhere to go; `/rescue log` still has it.
 
 ## Tested
 
-- 190+ automated tests (`pytest`) on Python 3.11, 3.13 and 3.14, including every case from two independent reviews: everyday commands from a project, from your home folder and inside a Hermes checkout; quoted text, comments and here-documents; braces, `$(…)` and `find` patterns; keys inside profiles; Rescue's own records; a live database undo; a 2 MB one-liner (checked in well under the hook timeout).
+- 210+ automated tests (`pytest`) on Python 3.11, 3.13 and 3.14, including Windows path rules (Git Bash, `C:\` paths, `%LOCALAPPDATA%`, PowerShell and `cmd`) and every case from two independent reviews: everyday commands from a project, from your home folder and inside a Hermes checkout; quoted text, comments and here-documents; braces, `$(…)` and `find` patterns; keys inside profiles; Rescue's own records; a live database undo; a 2 MB one-liner (checked in well under the hook timeout).
 - `hermes plugins validate --install-deps` passes, including the install security scan and the Desktop SDK surface check.
 - Run against real Hermes (`main`, November 2026) with a scripted model server:
   - a delete of `memories/` blocked under `--yolo`;

@@ -82,6 +82,7 @@ Keep this file concise and evidence-based. Update current state in place, append
 | 2026-11-06 | `pytest` (195 tests) after second-review fixes | Python 3.14.9, 3.13.18, 3.11.18 | VERIFIED | 195 passed on each |
 | 2026-11-06 | Both reviewers' probe scripts after fixes | Py 3.14 | VERIFIED | 312/312 everyday runs allowed (review 2), 102/103 (review 1, the 1 intended); 0 fuzz crashes; 2 MB one-liner well under the 30 s hook timeout; remaining allows are documented limits or out of scope (reading keys; git in the checkout, which core refuses) |
 | 2026-11-06 | `hermes plugins validate hermes_rescue --install-deps` after fixes | Hermes main @ 355a417 | VERIFIED | passed; security scan safe |
+| 2026-11-06 | Windows path rules (Git Bash `/c/…`, `C:\` paths, `%LOCALAPPDATA%`, `$env:`, PowerShell/cmd deletes) | Linux, `use_windows_paths(True)` + PureWindowsPath | SIMULATED | 22 tests pass; first real Windows run is the owner's (native Windows home = `%LOCALAPPDATA%\hermes`) |
 | 2026-11-06 | `demo/run_demo.sh` + live `state.db` check rerun after second-review fixes | Hermes main, Py 3.14 | VERIFIED | same results: blocks under `--yolo`, real cause note, undo of memories and of deleted messages (10 back, gateway kept working), project build cleanup ran |
 
 ### Integration and Evidence Status
@@ -132,6 +133,11 @@ Keep this file concise and evidence-based. Update current state in place, append
 - **Reason:** a backup-API rollback restored the rows but erased the running gateway's own bookkeeping (session_admissions), so the undo reply was never delivered (seen in a real run)
 - **Alternatives considered:** file replace (stale WAL replays the damage), full backup-API restore (breaks the live gateway)
 - **Status:** IMPLEMENTED, VERIFIED (real run + integrity checks)
+
+### 2026-11-06 — Windows support
+- **Decision:** path rules switch to Windows style on Windows (case-insensitive, `\` and `/`), Git Bash drive paths converted, `%LOCALAPPDATA%`/`$env:` expanded, PowerShell and cmd delete/move/copy/write commands read; SQLite opened through portable URIs
+- **Reason:** the owner tests on native Windows, where the home is `%LOCALAPPDATA%\hermes` and the agent's terminal is Git Bash; without this the guard missed Windows paths
+- **Status:** IMPLEMENTED, SIMULATED (tests on Linux); real Windows run pending
 
 ### 2026-11-06 — Credential list mirrored, not imported
 - **Decision:** bundle a copy of Hermes's credential-store list instead of importing `hermes_cli.profiles`

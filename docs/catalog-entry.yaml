@@ -20,6 +20,7 @@ screenshots: []
 known_issues:
   - "The shell check follows quotes, comments, here-documents, $(…), globs, braces, cd/env -C, bash -c, xargs and find patterns; it does not expand aliases or the scripts a command calls."
   - "Python passed to execute_code is checked by pattern only, so Rescue asks the human there rather than blocking."
+  - "On Windows, PowerShell and cmd commands are read for deletes, moves, copies and writes; longer PowerShell scripts with their own logic are not followed."
   - "/rescue undo for state.db only adds back missing conversations and messages; the full copy stays in the snapshot."
   - "In YOLO mode or with approvals off, Hermes approves Rescue's ask-first edits itself; the snapshot is still saved, so /rescue undo still works."
   - "In the classic CLI without the gateway, a failed-turn note is only kept in /rescue log."

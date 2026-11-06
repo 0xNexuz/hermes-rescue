@@ -146,9 +146,14 @@ def _is_sqlite(path: Path) -> bool:
         return False
 
 
+def _uri(path: Path, read_only: bool = False) -> str:
+    """A SQLite URI for *path* that works on Windows too (``file:///C:/…``)."""
+    return Path(os.path.abspath(path)).as_uri() + ("?mode=ro" if read_only else "")
+
+
 def _copy_sqlite(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
-    source = sqlite3.connect(f"file:{src}?mode=ro", uri=True, timeout=15)
+    source = sqlite3.connect(_uri(src, True), uri=True, timeout=15)
     try:
         target = sqlite3.connect(str(dst))
         try:
@@ -164,8 +169,14 @@ def _copy_one(src: Path, dst: Path) -> str:
     if src.is_symlink():
         if dst.is_symlink() or dst.exists():
             dst.unlink()
-        os.symlink(os.readlink(src), dst)
-        return "link"
+        try:
+            os.symlink(os.readlink(src), dst)
+            return "link"
+        except OSError:          # Windows without the symlink right: keep the linked file's content
+            if not src.is_file():
+                raise
+            shutil.copy2(src, dst)
+            return "file"
     if _is_sqlite(src):
         _copy_sqlite(src, dst)
         return "sqlite"
@@ -250,7 +261,7 @@ def _restore_sqlite(stored: Path, orig: Path) -> None:
     """Write the saved database into the live one through SQLite, so Hermes's open connections and
     its journal see the restored rows."""
     orig.parent.mkdir(parents=True, exist_ok=True)
-    source = sqlite3.connect(f"file:{stored}?mode=ro", uri=True)
+    source = sqlite3.connect(_uri(stored, True), uri=True)
     try:
         target = sqlite3.connect(str(orig), timeout=30)
         try:
@@ -294,9 +305,9 @@ def merge_rows(stored: Path, orig: Path) -> dict[str, int]:
     only come back with their conversation. Returns counts (``sessions``, ``messages``,
     ``not_back``: saved conversations still missing, e.g. a newer one took the same title).
     Raises ``_ShapeChanged`` (nothing written) when a table is missing on either side."""
-    con = sqlite3.connect(f"file:{orig}", uri=True, timeout=30)
+    con = sqlite3.connect(_uri(orig), uri=True, timeout=30)
     try:
-        con.execute("ATTACH DATABASE ? AS snap", (f"file:{stored}?mode=ro",))
+        con.execute("ATTACH DATABASE ? AS snap", (_uri(stored, True),))
         added: dict[str, int] = {}
         try:
             with con:

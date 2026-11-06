@@ -20,10 +20,12 @@ relative path points (no known working directory), it lets the call through rath
 from __future__ import annotations
 
 import fnmatch
+import ntpath
 import os
+import posixpath
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Iterable, Optional
 
 BLOCK, APPROVE, ALLOW = "block", "approve", "allow"
@@ -149,8 +151,21 @@ class Verdict:
 
 # ---- where to look ------------------------------------------------------------------------------
 
-def _norm(p: Path | str) -> Path:
-    return Path(os.path.normpath(str(p)))
+_WINDOWS = os.name == "nt"
+_P: type = PureWindowsPath if _WINDOWS else PurePosixPath
+_npath = ntpath if _WINDOWS else posixpath
+
+
+def use_windows_paths(on: bool) -> None:
+    """Switch the path rules (tests use this to check Windows behaviour on any machine)."""
+    global _WINDOWS, _P, _npath
+    _WINDOWS = on
+    _P = PureWindowsPath if on else PurePosixPath
+    _npath = ntpath if on else posixpath
+
+
+def _norm(p) -> "PurePosixPath | PureWindowsPath":
+    return _P(_npath.normpath(str(p)))
 
 
 def _within(path: Path, root: Path) -> bool:
@@ -165,7 +180,7 @@ def _within(path: Path, root: Path) -> bool:
 class Scope:
     homes: tuple[Path, ...]                 # the active Hermes home first, then the default root
     installs: tuple[Path, ...] = ()         # Hermes's program files (a source checkout, <home>/hermes-agent)
-    user_home: Path = Path("~")             # what `~` means in the agent's shell
+    user_home: Path = PurePosixPath("~")    # what `~` means in the agent's shell
 
     @classmethod
     def make(cls, home: Path, install: Optional[Path] = None, *, root: Optional[Path] = None,
@@ -231,26 +246,35 @@ def match_target(path: Path, scope: Scope) -> Optional[Target]:
 _GLOB_CHARS = re.compile(r"[*?\[]")
 
 
-_VAR = re.compile(r"\$\{(\w+)(?::?[-=]([^{}]*))?\}|\$(\w+)")
+_VAR = re.compile(r"\$\{(\w+)(?::?[-=]([^{}]*))?\}|\$env:(\w+)|\$(\w+)|%(\w+)%", re.I)
+# Folders worth knowing when they hold the Hermes home (Windows keeps it in %LOCALAPPDATA%\hermes).
+_KNOWN_DIR_VARS = ("LOCALAPPDATA", "APPDATA", "USERPROFILE", "XDG_DATA_HOME", "XDG_CONFIG_HOME")
+_GIT_BASH_DRIVE = re.compile(r"^/(?:cygdrive/)?([a-zA-Z])(?=/|$)")
 
 
 def _expand_vars(token: str, scope: Scope) -> str:
     def value(m: re.Match) -> str:
-        name, default = m.group(1) or m.group(3), m.group(2)
-        if name == "HERMES_HOME":
+        name = m.group(1) or m.group(3) or m.group(4) or m.group(5)
+        default = m.group(2)
+        upper = name.upper()
+        if upper == "HERMES_HOME":
             return str(scope.homes[0])
-        if name == "HOME":
+        if upper in ("HOME", "USERPROFILE") and (upper == "HOME" or _WINDOWS):
             return str(scope.user_home)
+        if upper in _KNOWN_DIR_VARS and os.environ.get(upper):
+            return os.environ[upper]
         return _VAR.sub(value, default) if default is not None else m.group(0)   # `${X:-/fallback}`
 
     t = _VAR.sub(value, token)
-    if t == "~" or t.startswith("~/"):
+    if t == "~" or t.startswith(("~/", "~\\")):
         t = str(scope.user_home) + t[1:]
+    if _WINDOWS:
+        t = _GIT_BASH_DRIVE.sub(lambda m: m.group(1).upper() + ":", t)   # Git Bash: /c/Users → C:/Users
     return t
 
 
 def _resolve(raw: str, cwd: Optional[Path]) -> Optional[Path]:
-    p = Path(raw)
+    p = _P(raw)
     if not p.is_absolute():
         if cwd is None:      # unknown working directory: don't guess where it points
             return None
@@ -718,7 +742,7 @@ class _Checker:
                     out += self.hit(raw, "append to" if op.endswith(">>") else "overwrite", "edit", here)
             if not words:
                 continue
-            verb = os.path.basename(words[0])
+            verb = _verb(words[0])
             if verb in ("cd", "pushd"):
                 args = _positional(words)
                 new: Optional[Path]
@@ -752,6 +776,14 @@ class _Checker:
             return []
         if verb == "eval":
             return self.shell(" ".join(words[1:]), cwd, depth + 1)
+        if verb.lower() in ("powershell", "pwsh"):
+            script = next((words[i + 1] for i, w in enumerate(words[:-1])
+                           if w.lower() in ("-command", "-c", "-cmd", "-encodedcommand")), None)
+            script = script if script is not None else " ".join(a for a in words[1:] if not a.startswith("-"))
+            return self._windows_script(script, cwd, powershell=True)
+        if verb.lower() == "cmd":
+            i = next((i for i, w in enumerate(words) if w.lower() in ("/c", "/k", "//c", "//k")), None)
+            return self._windows_script(" ".join(words[i + 1:]), cwd, powershell=False) if i is not None else []
         if _PYTHONS.match(verb):
             code = _flag_value(words, "c")
             if code is not None:
@@ -846,6 +878,44 @@ class _Checker:
             else:
                 res.append(self.hit_path(dest, "overwrite", "edit"))
         return res
+
+    def _windows_script(self, script: str, cwd: Optional[Path], *, powershell: bool) -> list[Verdict]:
+        """Deletes, moves and writes in PowerShell or cmd scripts run from the terminal. Their
+        paths use backslashes literally, so these are split on whitespace and quotes only."""
+        out: list[Verdict] = []
+        for stmt in re.split(r"[;|\n]|&&|\|\||(?<!&)&(?!&)" if not powershell else r"[;|\n]", script or ""):
+            words = [w.strip("'\"") for w in re.findall(r'"[^"]*"|\'[^\']*\'|\S+', stmt)]
+            if not words:
+                continue
+            verb = _verb(words[0]).lower()
+            named, plain, i = {}, [], 1
+            while i < len(words):
+                w = words[i]
+                if w.startswith("-") and powershell:
+                    key = w.lower().rstrip(":")
+                    if key in ("-path", "-literalpath", "-destination", "-filepath", "-pspath") and i + 1 < len(words):
+                        named.setdefault(key, []).append(words[i + 1])
+                        i += 2
+                        continue
+                elif not (w.startswith("/") and not powershell and len(w) <= 3):
+                    plain.append(w)
+                i += 1
+            paths = named.get("-path", []) + named.get("-literalpath", []) + named.get("-pspath", []) + plain
+            if verb in _WIN_DELETE:
+                out += [v for a in paths for v in self.hit(a, "delete", "delete", cwd)]
+            elif verb in _WIN_MOVE:
+                dest = (named.get("-destination") or plain[-1:] or [None])[0]
+                out += [v for a in paths if a != dest for v in self.hit(a, "move away", "delete", cwd)]
+                out += self.hit(dest, "overwrite", "edit", cwd) if dest else []
+            elif verb in _WIN_COPY:
+                dest = (named.get("-destination") or plain[-1:] or [None])[0]
+                out += self.hit(dest, "overwrite", "edit", cwd) if dest else []
+            elif verb in _WIN_WRITE:
+                out += [v for a in (named.get("-path", []) + named.get("-filepath", []) + named.get("-literalpath", [])
+                                    or plain[:1]) for v in self.hit(a, "overwrite", "edit", cwd)]
+            elif verb in _WIN_EMPTY:
+                out += [v for a in paths for v in self.hit(a, "empty", "delete", cwd)]
+        return out
 
     def _pip(self, words: list[str]) -> list[Verdict]:
         if "uninstall" in words and any(re.fullmatch(r"hermes[-_]agent(\[.*\])?", w, re.I) for w in words):
@@ -977,6 +1047,11 @@ def _find_pattern_hits(test: str, pattern: str, folder: Path, names: tuple[str, 
                for n in names)
 
 
+def _verb(word: str) -> str:
+    name = ntpath.basename(word) if _WINDOWS else os.path.basename(word)
+    return name[:-4] if name.lower().endswith(".exe") else name
+
+
 def _flag_value(words: list[str], flag: str) -> Optional[str]:
     """The argument of ``-c`` for ``bash -c``, ``bash -lc``, ``sh -ec``, ``python -Ic`` …"""
     takes_arg = False
@@ -1013,7 +1088,7 @@ def _find_starts(words: list[str]) -> list[str]:
 def _scope(home, install, cwd, root, user_home) -> Scope:
     if isinstance(home, Scope):
         return home
-    return Scope.make(Path(home), install, root=root, user_home=user_home, cwd=cwd)
+    return Scope.make(_norm(home), install, root=root, user_home=user_home, cwd=cwd)
 
 
 def check_shell(command: str, home: Path | Scope, install: Optional[Path] = None, cwd: Optional[Path] = None,
@@ -1031,7 +1106,8 @@ _PY_DESTRUCTIVE = re.compile(
     r"|\.(unlink|rmdir|write_text|write_bytes|rename|replace|truncate)\s*\("
     r"|\.open\s*\(\s*['\"][wax]"
     r"|\bopen\s*\([^\n]*?,\s*(mode\s*=\s*)?['\"][wax]b?\+?t?['\"]", re.I)
-_PY_HERMES_HINT = re.compile(r"\.hermes\b|HERMES_HOME|get_hermes_home|hermes_constants")
+_PY_HERMES_HINT = re.compile(r"\.hermes\b|HERMES_HOME|get_hermes_home|hermes_constants|"
+                             r"LOCALAPPDATA[^\n]{0,80}hermes|AppData[\\/]+Local[\\/]+hermes", re.I)
 
 
 def check_python(code: str, home: Path | Scope, install: Optional[Path] = None, *,
@@ -1044,7 +1120,10 @@ def check_python(code: str, home: Path | Scope, install: Optional[Path] = None, 
     scope = _scope(home, install, None, root, None)
     if not code:
         return Verdict()
-    anchored = _PY_HERMES_HINT.search(code) or any(str(h) in code for h in scope.homes)
+    lowered = code.lower()
+    anchored = _PY_HERMES_HINT.search(code) or any(
+        form.lower() in lowered for h in scope.homes
+        for form in (str(h), str(h).replace("\\", "\\\\"), str(h).replace("\\", "/")))
     if not anchored:
         return Verdict()
     if not (_PY_DESTRUCTIVE.search(code) or ("sqlite3" in code and _SQLITE_WRITE.search(code))):
@@ -1057,6 +1136,12 @@ def check_python(code: str, home: Path | Scope, install: Optional[Path] = None, 
 
 _SCRIPT_TARGET = Target("", "Hermes's own data (from a Python script)", APPROVE, APPROVE,
                         "the matching `hermes` command, or doing it only if the user asked")
+# PowerShell and cmd commands (and their short aliases), lower-case.
+_WIN_DELETE = {"remove-item", "ri", "rm", "del", "erase", "rd", "rmdir"}
+_WIN_MOVE = {"move-item", "mi", "move", "mv", "rename-item", "ren", "rni"}
+_WIN_COPY = {"copy-item", "copy", "cpi", "cp", "xcopy", "robocopy"}
+_WIN_WRITE = {"set-content", "sc", "out-file", "add-content", "ac"}
+_WIN_EMPTY = {"clear-content", "clc"}
 _NESTED_TARGET = Target("", "Hermes's own data (a command nested too deep to read)", APPROVE, APPROVE,
                         "running the inner command directly")
 # What the protected folders typically hold, for judging `find … -name PATTERN -delete`.
@@ -1089,12 +1174,12 @@ def check_tool_call(tool_name: str, args: dict, home: Path, install: Optional[Pa
     if tool_name in _SHELL_TOOLS:
         workdir = args.get("workdir")
         if isinstance(workdir, str) and workdir.strip():
-            scope0 = Scope.make(Path(home), install, root=root, user_home=user_home)
+            scope0 = Scope.make(_norm(home), install, root=root, user_home=user_home)
             found = _candidates(workdir.strip(), scope0, cwd)
             cwd = found[0] if found else None
-        scope = Scope.make(Path(home), install, root=root, user_home=user_home, cwd=cwd)
+        scope = Scope.make(_norm(home), install, root=root, user_home=user_home, cwd=cwd)
         return check_shell(str(args.get("command") or ""), scope, cwd=cwd)
-    scope = Scope.make(Path(home), install, root=root, user_home=user_home, cwd=cwd)
+    scope = Scope.make(_norm(home), install, root=root, user_home=user_home, cwd=cwd)
     if tool_name in _CODE_TOOLS:
         return check_python(str(args.get("code") or ""), scope)
     if tool_name in _WRITE_TOOLS:
